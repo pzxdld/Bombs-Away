@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+
+   <head>
+   
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+		<meta charset="UTF-8">		
+	   <!-- 
+      CST-214
+		Bob Lipscomb
+      Date: March 21 - April 6, 2008
+      Assignment: End of class project
+      Purpose: Use JavaScript to mimic the Windows Minesweeper game
+      -->
+
+		<script type="text/javascript">
+		/* <![CDATA[ */
+		
+		// The variable array 'grid' contains a code to indicate what the square is
+		//		If a bomb, = "bomb"
+		//		If a blank, = "blank"
+		//		If a number 1, = "one"
+		//		If a number 2, = "two"
+		//		If a number 3, = "three"
+		//		If a number 4, = "four"
+		//		If a number 5, = "five"
+		//		If a number 6, = "six"
+		//		If a number 7 or 8, I'll reset the game (transparent to player)
+		//		If greater than 8, my board has somehow expanded into 3 dimensions
+		//	The variable array 'exposed' contains "true" if the square has been clicked
+		
+		// Global variables
+		var grid = new Array (64);
+		var exposed = new Array (64);
+		var blanks = new Array (64);		// used in the uncoverBlanks function		
+		var flags;	// used to keep track of the number of flags remaining to be used
+
+		function setUpBoard()   {
+		// This function calls various sub-functions that define every square on the board
+					
+			flags = 10;
+			
+			// Initialize all squares to a blank
+			for (initCount = 0; initCount < 64; ++initCount)   {
+				grid[initCount] = "blank";	// default to 'blank'
+				exposed[initCount] = false;
+				blanks[initCount] = false;
+				window.document.images[initCount].src="Unpicked.jpg";
+			}
+
+			window.document.images[64].src="Smile.jpg";
+			window.document.forms[0].elements[0].value = flags;
+						
+			assignBombs();
+			assignNumbers();
+			//printGrid();	// debug
+		}	// end 'setUpBoard' function
+		
+		function assignBombs()   {
+		// This function randomly picks 10 squares to be bombs
+		// It also checks the 'grid' array to make sure that square is not already
+		// marked as a bomb.  If not, it writes 'bomb' to that array element.
+					
+			var randomNumber;
+			var bombCounter = 0;  // To keep track of how many bombs have been marked
+			
+			do   {
+				
+			   randomNumber=Math.floor(Math.random()*64);  // random numbers between 0 and 63
+				
+			   if (grid[randomNumber] != "bomb")  {
+			      grid[randomNumber] = "bomb";
+			      ++bombCounter;
+			      //window.alert("grid[" + randomNumber + "] is a bomb.");  // debug
+			   }
+			
+			} while (bombCounter < 10);
+					
+		}	// end 'assignBombs' function
+		
+		function assignNumbers()   {
+		// After loading 10 squares with bombs, this routine figures out which
+		// squares on the board need to have numbers (and what the numbers are).
+		// It looks at all 8 adjacent squares (if they all exist) to the square in
+		// question to see if they contain bombs.
+				
+			var adjacentBombs = 0;  // counts bombs in adjacent squares
+			
+			for (loopCounter = 0; loopCounter < 64; ++loopCounter)   {
+
+				 //window.alert("Testing Cell " + loopCounter);  // debug
+
+				 // The following 'if' statements prevent the program from looking 
+				 // at non-existent squares (for border squares)
+				 if (grid[loopCounter] != "bomb")   {		// Won't be putting numbers in these
+  				 	
+					if ((loopCounter > 7) && (loopCounter % 8 > 0))   {		// Test top left square
+  				 		if (grid[loopCounter - 9] == "bomb") ++adjacentBombs;
+  				 	}
+  
+	  				if (loopCounter > 7)  	{									// Test top square
+  				 		if (grid[loopCounter - 8] == "bomb") ++adjacentBombs;
+  				 	}				 
+  
+  				 	if ((loopCounter > 7) && ((loopCounter + 1) % 8 > 0))   {	// Test top right square
+  				 		if (grid[loopCounter - 7] == "bomb") ++adjacentBombs;
+  				 	}				 
+  
+  				 	if (loopCounter % 8 > 0)   {								// Test left square
+  				 		if (grid[loopCounter - 1] == "bomb") ++adjacentBombs;
+  				 	}
+  				 
+  				 	if ((loopCounter + 1) % 8 > 0)   {							// Test right square
+  				 		if (grid[loopCounter + 1] == "bomb") ++adjacentBombs;
+  				 	}
+  				 
+  				 	if ((loopCounter < 56) && (loopCounter % 8 > 0))   {		// Test bottom left square
+  				 		if (grid[loopCounter + 7] == "bomb") ++adjacentBombs;
+  				 	}				 
+  				 				 
+  				 	if (loopCounter < 56)   {									// Test bottom square
+  				 		if (grid[loopCounter + 8] == "bomb") ++adjacentBombs;
+  				 	}
+  				 
+  				 	if ((loopCounter < 56) && ((loopCounter + 1) % 8 > 0))   {	// Test bottom right square
+  				 		if (grid[loopCounter + 9] == "bomb") ++adjacentBombs;
+  				 	}
+  				 
+  				 	//window.alert("Cell " + loopCounter + " is adjacent to " + adjacentBombs + " bombs.");  // debug
+  				 	
+					// Now put the correct code in the numbered squares
+					switch (adjacentBombs)   {
+						case 0:
+							break;
+						case 1:
+							grid[loopCounter] = "one";
+							break;
+						case 2:
+							grid[loopCounter] = "two";
+							break;
+						case 3:
+							grid[loopCounter] = "three";
+							break;
+						case 4:
+							grid[loopCounter] = "four";
+							break;
+						case 5:
+							grid[loopCounter] = "five";
+							break;
+						case 6:
+							grid[loopCounter] = "six";
+							break;
+						case 7:
+							grid[loopCounter] = "seven";
+							break;
+						case 8:
+							grid[loopCounter] = "eight";
+							break;
+						default:
+							window.alert("You've got a big logic problem");
+					}	// end of switch structure
+																																																																		
+					adjacentBombs = 0;	// reset counter for next iteration
+					
+				 }	// end 'if not bomb' condition
+			}	// end 'for' loop
+		}	// end 'assignNumbers' function							 
+
+		function printGrid()   {
+		// This function is for debugging only, and prints the contents of the grid
+
+			debugWindow = window.open("", "", "scrollbars=yes,height=500,width=300");
+			debugWindow.document.open();
+			for (loopCounter = 0; loopCounter < 64; ++loopCounter)   {
+				debugWindow.document.write("grid[" + loopCounter +"] = " + grid[loopCounter] + "<br>");
+			}
+		}	// end of 'printGrid' function
+							 				 				 
+		function clickedSquare(squareNumber)   {
+		// This function does the processing when the player clicks on a square.
+		// The calling statement passes the number of the square clicked to this function.
+		
+			var didTheyWin = false;
+			
+			//window.alert("You clicked square " + squareNumber);  // debug
+			if (grid[squareNumber] == "bomb") 
+				loseGame(squareNumber);			// User clicked on a bomb.  Poor SOB.
+			if ((grid[squareNumber] != "bomb") && (grid[squareNumber] != "blank") && (exposed[squareNumber] == false))   {
+				exposed[squareNumber] = true;
+				exposeNumber(squareNumber);		// If not a bomb and not blank, it's a number
+				didTheyWin = testForWin();
+			}
+			if ((grid[squareNumber] == "blank") && (exposed[squareNumber] == false))  {
+				exposed[squareNumber] = true;
+				uncoverBlanks(squareNumber);	// Go to routine to uncover connected blank squares.
+			}
+
+			if (didTheyWin == true) winGame();
+			
+		}	// end 'clickedSquare' function
+
+		function rightClickedSquare(squareNumber)   {
+		// This function does the processing when the player right clicks on a square.
+		// The calling statement passes the number of the square right-clicked to this function.
+		
+			// window.alert("Image is: " + window.document.images[squareNumber].src);  // debug
+			
+			// window.alert("Filename is: " + fileName);  // debug
+
+			fileName = stripFileName(squareNumber);
+			
+			if (fileName == "Unpicked.jpg")   {
+				window.document.images[squareNumber].src = "Flag.jpg";
+				--flags;
+				window.document.forms[0].elements[0].value = flags;
+			}
+			if (fileName == "Flag.jpg")   {
+				window.document.images[squareNumber].src = "Question_Mark.jpg";
+				++flags;
+				window.document.forms[0].elements[0].value = flags;
+			}
+			if (fileName == "Question_Mark.jpg")
+				window.document.images[squareNumber].src = "Unpicked.jpg";
+							
+		}	// end 'rightClickedSquare' function
+
+		function loseGame(sqNumber)   {
+		// This function updates the board when the user clicks a bomb.
+		
+			// The following shows the bomb the user clicked on with a red background
+			// and shows the dead smiley face
+			window.document.images[sqNumber].src="Bomb_Picked.jpg";
+			window.document.images[64].src="Dead.jpg";
+			
+			for (count = 0; count < 64; ++count)   {
+
+				fileName = stripFileName(count);
+			
+				// The following uncovers all the bombs in the grid
+				if ((grid[count] == "bomb") && (count != sqNumber))	
+					window.document.images[count].src="Bomb.jpg";
+				
+				// The following checks whether the user has flagged a square that is not a bomb
+				if ((grid[count] != "bomb") && (fileName == "Flag.jpg"))
+					window.document.images[count].src="Bomb_Not.jpg"
+			
+			}	// end 'for' loop
+
+			window.alert("Sorry about your luck. Click the dead smiley to play again.");
+			
+		}	// end 'loseGame' function
+
+		function testForWin()   {
+		// This function is called every time a user successfully exposes a non-bomb square.
+		// It tests to see if every non-bomb square has been exposed, in which case the user wins!
+		
+			//window.alert("testForWin");	// debug
+			
+			var countExposed = 0;
+			
+			for (count = 0; count < 64; ++count)   {
+				if (exposed[count] == true) ++countExposed;
+			}
+			
+			// window.alert("countExposed = " + countExposed);  // debug
+			
+			if (countExposed == 54)	// Win when you've exposed 54 squares with no bombs
+				return true;
+			else
+				return false;
+				
+		}	// end 'testForWin' function				
+
+		function winGame()   {
+		
+			window.document.images[64].src="Won.jpg";
+			var fileName;
+			
+			// Automatically flag the bombs they did not flag
+			for (count = 0; count < 64; ++count)   {
+				fileName = stripFileName(count);
+			
+				if ((grid[count] == "bomb") && (fileName != "Flag.jpg"))
+					window.document.images[count].src = "Flag.jpg";	
+			}			
+
+			window.document.forms[0].elements[0].value = 0;
+			window.alert("OMG! You totally won! Click the smiley to play again.");
+						
+		}	// end 'winGame' function
+		
+		function exposeNumber(sqNumber)   {
+		// This function updates the board when the user clicks a number.
+		
+			if (grid[sqNumber] == "one") window.document.images[sqNumber].src="One.jpg";			
+			if (grid[sqNumber] == "two") window.document.images[sqNumber].src="Two.jpg";			
+			if (grid[sqNumber] == "three") window.document.images[sqNumber].src="Three.jpg";			
+			if (grid[sqNumber] == "four") window.document.images[sqNumber].src="Four.jpg";			
+			if (grid[sqNumber] == "five") window.document.images[sqNumber].src="Five.jpg";			
+			if (grid[sqNumber] == "six") window.document.images[sqNumber].src="Six.jpg";			
+			if (grid[sqNumber] == "seven") window.document.images[sqNumber].src="Seven.jpg";			
+			if (grid[sqNumber] == "eight") window.document.images[sqNumber].src="Eight.jpg";			
+			
+		}  // end of 'exposeNumber' function
+
+		function uncoverBlanks(sqNumber)   {
+		// This function updates the board when the user clicks a blank. It uses a fairly complicated
+		// algorithm to uncover all contiguous blank squares and the numbers bordering the blanks.
+		// 
+		// When a blank is uncovered, this function looks at all 8 possible adjacent squares to the 
+		// blank (testing them to see if they exist first).  If any of these adjacent squares is also
+		// blank and has not been exposed, that index number in the 'blanks' array is set to true.
+		// This routine will also expose any numbered squares adjacent to the square originally clicked.
+		//
+		// After finishing examination of the original square, this routine will search the 'blanks' 
+		// array for any indices marked as true, then recursively call this routine to do the same
+		// procedure on this adjacent blank square.  This routine will continue to be called until there
+		// are no indices of the 'blanks' array set to true.  I hope.
+		//
+		// Note that much of the redundant processing is done in another function 'testSquare', called 
+		// by this function.
+
+			var fileName;
+			
+			window.document.images[sqNumber].src = "Base.jpg";		// Expose current square
+			exposed[sqNumber] = true;
+			blanks[sqNumber] = false;
+			
+			if ((sqNumber > 7) && (sqNumber % 8 > 0))   {			// Test top left square
+				fileName = stripFileName(sqNumber - 9);
+				testSquare(sqNumber - 9, fileName);
+  			}
+  
+	  		if (sqNumber > 7)  	{								// Test top square
+				fileName = stripFileName(sqNumber - 8);
+				testSquare(sqNumber - 8, fileName);
+  			}
+  
+  			if ((sqNumber > 7) && ((sqNumber + 1) % 8 > 0))   {	// Test top right square
+				fileName = stripFileName(sqNumber - 7);
+				testSquare(sqNumber - 7, fileName);
+  			}
+  
+  			if (sqNumber % 8 > 0)   {								// Test left square
+				fileName = stripFileName(sqNumber - 1);
+				testSquare(sqNumber - 1, fileName);
+  			}
+  				 
+  			if ((sqNumber + 1) % 8 > 0)   {						// Test right square
+				fileName = stripFileName(sqNumber + 1);
+				testSquare(sqNumber + 1, fileName);
+  			}
+  				 
+  			if ((sqNumber < 56) && (sqNumber % 8 > 0))   {			// Test bottom left square
+				fileName = stripFileName(sqNumber + 7);
+				testSquare(sqNumber + 7, fileName);
+  			}
+  				 				 
+  			if (sqNumber < 56)   {									// Test bottom square
+				fileName = stripFileName(sqNumber + 8);
+				testSquare(sqNumber + 8, fileName);
+  			}
+  				 
+  			if ((sqNumber < 56) && ((sqNumber + 1) % 8 > 0))   {	// Test bottom right square
+				fileName = stripFileName(sqNumber + 9);
+				testSquare(sqNumber + 9, fileName);
+  			}
+
+			for (count = 0; count < 64; ++count)   {	// Test 'blanks' array
+				if (blanks[count] == true) uncoverBlanks(count);
+			}
+			  			
+		}	// end of 'uncoverBlanks' function
+
+		function testSquare(testNumber, fName)   {
+		// Does the redundant testing for the 'uncoverBlanks' function
+		
+			if ((fName == "Unpicked.jpg") && (grid[testNumber] == "blank"))   
+				blanks[testNumber] = true;
+			else if ((fName == "Unpicked.jpg") && (grid[testNumber] != "bomb"))   {
+				// window.alert("Before exposeNumber"); // debug
+				exposeNumber(testNumber);
+				// window.alert("Before exposed[testNumber]");  // debug
+				exposed[testNumber] = true;
+				testForWin();		
+			}
+			
+		} // end of 'testSquare' function
+		
+		function stripFileName(counter)   {
+		// Code to strip off the filename path info because the DOM returns the whole
+		// file path and I couldn't figure out a better way to do it
+		
+			var fName;	// the filename portion only which is returned to the calling routine
+			var endOfPath;
+		
+			fName = window.document.images[counter].src;
+			endOfPath = fName.lastIndexOf("/");
+			fName = fName.substring(endOfPath + 1);		
+			return fName;
+			
+		}	// end of 'stripFileName' function
+									
+		/* ]]>       */
+		</script>
+
+		<style type="text/css">
+		<!--
+			
+			img {
+				width: 32;
+				height: 32;
+			}
+			
+		-->
+		</style>
+
+      <title>Bombs Away!</title>
+
+   </head>
+
+   <body onload="setUpBoard()" oncontextmenu="return false;">
+
+		<table summary="Bombs Away" cellpadding="0" cellspacing="0">
+		
+			<caption style="font-family: 'Comic Sans MS', fantasy; font-size: xx-large">Bombs Away!</caption>
+			<tr><td>
+							
+				<!-- Row 1 -->
+				<img src="Unpicked.jpg" alt="Careful!"   
+					onclick="clickedSquare(0);" 
+					onmousedown="if (event.button==2) rightClickedSquare(0); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(1);" 
+					onmousedown="if (event.button==2) rightClickedSquare(1); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(2);" 
+					onmousedown="if (event.button==2) rightClickedSquare(2); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(3);" 
+					onmousedown="if (event.button==2) rightClickedSquare(3); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(4);" 
+					onmousedown="if (event.button==2) rightClickedSquare(4); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(5);" 
+					onmousedown="if (event.button==2) rightClickedSquare(5); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(6);" 
+					onmousedown="if (event.button==2) rightClickedSquare(6); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(7);" 
+					onmousedown="if (event.button==2) rightClickedSquare(7); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 2 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(8);" 
+					onmousedown="if (event.button==2) rightClickedSquare(8); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(9);" 
+					onmousedown="if (event.button==2) rightClickedSquare(9); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(10);" 
+					onmousedown="if (event.button==2) rightClickedSquare(10); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(11);" 
+					onmousedown="if (event.button==2) rightClickedSquare(11); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(12);" 
+					onmousedown="if (event.button==2) rightClickedSquare(12); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(13);" 
+					onmousedown="if (event.button==2) rightClickedSquare(13); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(14);" 
+					onmousedown="if (event.button==2) rightClickedSquare(14); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(15);" 
+					onmousedown="if (event.button==2) rightClickedSquare(15); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 3 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(16);" 
+					onmousedown="if (event.button==2) rightClickedSquare(16); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(17);" 
+					onmousedown="if (event.button==2) rightClickedSquare(17); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(18);" 
+					onmousedown="if (event.button==2) rightClickedSquare(18); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(19);" 
+					onmousedown="if (event.button==2) rightClickedSquare(19); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(20);" 
+					onmousedown="if (event.button==2) rightClickedSquare(20); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(21);" 
+					onmousedown="if (event.button==2) rightClickedSquare(21); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(22);" 
+					onmousedown="if (event.button==2) rightClickedSquare(22); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(23);" 
+					onmousedown="if (event.button==2) rightClickedSquare(23); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 4 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(24);" 
+					onmousedown="if (event.button==2) rightClickedSquare(24); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(25);" 
+					onmousedown="if (event.button==2) rightClickedSquare(25); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(26);" 
+					onmousedown="if (event.button==2) rightClickedSquare(26); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(27);" 
+					onmousedown="if (event.button==2) rightClickedSquare(27); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(28);" 
+					onmousedown="if (event.button==2) rightClickedSquare(28); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(29);" 
+					onmousedown="if (event.button==2) rightClickedSquare(29); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(30);" 
+					onmousedown="if (event.button==2) rightClickedSquare(30); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(31);" 
+					onmousedown="if (event.button==2) rightClickedSquare(31); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 5 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(32);" 
+					onmousedown="if (event.button==2) rightClickedSquare(32); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(33);" 
+					onmousedown="if (event.button==2) rightClickedSquare(33); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(34);" 
+					onmousedown="if (event.button==2) rightClickedSquare(34); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(35);" 
+					onmousedown="if (event.button==2) rightClickedSquare(35); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(36);" 
+					onmousedown="if (event.button==2) rightClickedSquare(36); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(37);" 
+					onmousedown="if (event.button==2) rightClickedSquare(37); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(38);" 
+					onmousedown="if (event.button==2) rightClickedSquare(38); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(39);" 
+					onmousedown="if (event.button==2) rightClickedSquare(39); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 6 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(40);" 
+					onmousedown="if (event.button==2) rightClickedSquare(40); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(41);" 
+					onmousedown="if (event.button==2) rightClickedSquare(41); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(42);" 
+					onmousedown="if (event.button==2) rightClickedSquare(42); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(43);" 
+					onmousedown="if (event.button==2) rightClickedSquare(43); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(44);" 
+					onmousedown="if (event.button==2) rightClickedSquare(44); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(45);" 
+					onmousedown="if (event.button==2) rightClickedSquare(45); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(46);" 
+					onmousedown="if (event.button==2) rightClickedSquare(46); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(47);" 
+					onmousedown="if (event.button==2) rightClickedSquare(47); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 7 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(48);" 
+					onmousedown="if (event.button==2) rightClickedSquare(48); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(49);" 
+					onmousedown="if (event.button==2) rightClickedSquare(49); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(50);" 
+					onmousedown="if (event.button==2) rightClickedSquare(50); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(51);" 
+					onmousedown="if (event.button==2) rightClickedSquare(51); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(52);" 
+					onmousedown="if (event.button==2) rightClickedSquare(52); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(53);" 
+					onmousedown="if (event.button==2) rightClickedSquare(53); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(54);" 
+					onmousedown="if (event.button==2) rightClickedSquare(54); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(55);" 
+					onmousedown="if (event.button==2) rightClickedSquare(55); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+					
+			<tr><td>
+				<!-- Row 8 -->
+				<img src="Unpicked.jpg" alt="Careful!"  
+					onclick="clickedSquare(56);" 
+					onmousedown="if (event.button==2) rightClickedSquare(56); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Are you sure?" 
+					onclick="clickedSquare(57);" 
+					onmousedown="if (event.button==2) rightClickedSquare(57); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I don't know ..." 
+					onclick="clickedSquare(58);" 
+					onmousedown="if (event.button==2) rightClickedSquare(58); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Hold your breath!" 
+					onclick="clickedSquare(59);" 
+					onmousedown="if (event.button==2) rightClickedSquare(59); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="This could hurt ..." 
+					onclick="clickedSquare(60);" 
+					onmousedown="if (event.button==2) rightClickedSquare(60); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I can't look!" 
+					onclick="clickedSquare(61);" 
+					onmousedown="if (event.button==2) rightClickedSquare(61); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="Maybe ...." 
+					onclick="clickedSquare(62);" 
+					onmousedown="if (event.button==2) rightClickedSquare(62); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+				<img src="Unpicked.jpg" alt="I think I'm gonna puke!" 
+					onclick="clickedSquare(63);" 
+					onmousedown="if (event.button==2) rightClickedSquare(63); window.document.images[64].src = 'Gasp.jpg';"
+					onmouseup="window.document.images[64].src = 'Smile.jpg';">
+			</td></tr>
+			
+			<tr align="center"><td>					
+
+				<form action="" method="get" enctype="text/html">
+					<p style="font-family: 'Comic Sans MS', fantasy">
+						Flags Remaining: 
+						<input type="text" size="2" style="font-family: 'Comic Sans MS', fantasy">
+					</p>
+				</form>
+
+			</td></tr> 
+
+			<tr align="center"><td><p>					
+				<img src="Smile.jpg" alt="smiley face" onclick="setUpBoard();">
+			</p></td></tr>
+			
+		</table>
+
+		<p style="font-family: 'Comic Sans MS', fantasy; font-size: xx-small">
+			Acknowledgement to Microsoft's Minesweeper game as the inspiration<br>
+			for this project.  All programming, however, was done by the author.<br>
+		</p>
+		 
+    </body>
+
+</html>
